@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import '../services/i_pdf_picker_service.dart';
 import '../services/i_pdf_service.dart';
+import '../services/saved_pdf_service.dart';
+import '../services/pdf_api_service.dart';
 import '../widgets/import_button_widget.dart';
 import '../widgets/pdf_viewer_widget.dart';
+import '../models/saved_pdf.dart';
+import 'pdf_list_screen.dart';
+import 'dart:io';
 
 class PdfReaderScreen extends StatefulWidget {
   final IPdfPickerService pdfPickerService;
@@ -19,7 +24,9 @@ class PdfReaderScreen extends StatefulWidget {
 }
 
 class _PdfReaderScreenState extends State<PdfReaderScreen> {
-  String? _currentPdfPath;
+  String? _currentPdfUrl;
+  final SavedPdfService _savedPdfService = SavedPdfService();
+  final PdfApiService _apiService = PdfApiService();
 
   @override
   void dispose() {
@@ -28,18 +35,39 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   }
 
   Future<void> _pickAndLoadPdf() async {
+    debugPrint('PdfReaderScreen: Iniciando seleção de PDF');
     try {
       final path = await widget.pdfPickerService.pickPdfFile();
       if (path != null) {
-        _currentPdfPath = path;
-        await widget.pdfService.loadPdf(path);
+        debugPrint('PdfReaderScreen: PDF selecionado: $path');
+        // Upload PDF to API
+        final uploadResult = await _apiService.uploadPdf(File(path));
+        // Use a URL completa retornada pela API
+        final pdfUrl = '${_apiService.baseUrl}${uploadResult['url']}';
+        debugPrint('PdfReaderScreen: URL completa do PDF: $pdfUrl');
+
+        // Delete local cached file after upload
+        try {
+          await File(path).delete();
+          debugPrint('PdfReaderScreen: Arquivo local deletado após upload: $path');
+        } catch (e) {
+          debugPrint('PdfReaderScreen: Erro ao deletar arquivo local: $e');
+        }
+
+        _currentPdfUrl = pdfUrl;
+        debugPrint('PdfReaderScreen: Carregando PDF da URL: $pdfUrl');
+        await widget.pdfService.loadPdf(pdfUrl);
+
+        await _savePdfInfo(uploadResult, pdfUrl);
+
         setState(() {});
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('PDF carregado com sucesso!')),
+            const SnackBar(content: Text('PDF enviado para o backend e carregado com sucesso!')),
           );
         }
       } else {
+        debugPrint('PdfReaderScreen: Nenhum arquivo selecionado');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Nenhum arquivo selecionado')),
@@ -47,26 +75,76 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
         }
       }
     } catch (e) {
+      debugPrint('PdfReaderScreen: Erro ao processar PDF: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao carregar PDF: $e')),
+          SnackBar(content: Text('Erro ao enviar PDF: $e')),
         );
       }
     }
   }
 
+  Future<void> _savePdfInfo(Map<String, dynamic> uploadResult, String pdfUrl) async {
+    try {
+      final savedPdf = SavedPdf(
+        id: uploadResult['id'],
+        originalName: uploadResult['filename'],
+        pdfUrl: pdfUrl,
+        savedAt: DateTime.now(),
+      );
+
+      await _savedPdfService.savePdfInfo(savedPdf);
+    } catch (e) {
+      debugPrint('Erro ao salvar informações do PDF: $e');
+    }
+  }
+
+  void _goToSavedPdfs() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PdfListScreen(pdfService: widget.pdfService),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Leitor de PDF")),
-      body: widget.pdfService.controller == null || _currentPdfPath == null
+      appBar: AppBar(
+        title: const Text("Leitor de PDF"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.list),
+            onPressed: _goToSavedPdfs,
+            tooltip: 'PDFs Salvos',
+          ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _pickAndLoadPdf,
+            tooltip: 'Importar PDF',
+          ),
+        ],
+      ),
+      body: widget.pdfService.controller == null || _currentPdfUrl == null
           ? Center(
-              child: ImportButtonWidget(onPressed: _pickAndLoadPdf),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ImportButtonWidget(onPressed: _pickAndLoadPdf),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: _goToSavedPdfs,
+                    icon: const Icon(Icons.list),
+                    label: const Text('Ver PDFs Salvos'),
+                  ),
+                ],
+              ),
             )
           : PdfViewerWidget(
               controller: widget.pdfService.controller!,
               pdfService: widget.pdfService,
-              originalPath: _currentPdfPath!,
+              originalPath: _currentPdfUrl!,
             ),
     );
   }

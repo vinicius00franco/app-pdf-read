@@ -1,91 +1,65 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 import 'i_pdf_service.dart';
 
 class PdfService implements IPdfService {
   PdfController? _controller;
-  String? _currentPdfPath;
+
+  final Dio _dio = Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 30),
+  ));
 
   @override
   PdfController? get controller => _controller;
 
+  @override
   Future<String?> getSavedPdfPath(String originalPath) async {
-    final appDir = await getApplicationDocumentsDirectory();
-    final cacheDir = Directory('${appDir.path}/cache');
-    
-    if (!await cacheDir.exists()) {
-      await cacheDir.create(recursive: true);
-    }
-    
-    final fileName = originalPath.split(Platform.pathSeparator).last;
-    final compressedFileName = '${fileName.hashCode}.flate';
-    return '${cacheDir.path}/$compressedFileName';
+    // This method is no longer used for file paths, but kept for compatibility
+    // Now we return the URL directly
+    return null;
   }
 
   @override
-  Future<void> loadPdf(String path) async {
+  Future<void> loadPdf(String url) async {
     try {
-      // Verificar se já existe uma versão comprimida salva
-      final savedPath = await getSavedPdfPath(path);
-      if (savedPath != null && await File(savedPath).exists()) {
-        // Carregar versão comprimida
-        final compressedData = await File(savedPath).readAsBytes();
-        final decompressedData = gzip.decode(compressedData);
-        final tempFile = await _createTempFile(decompressedData, path.split('/').last);
-        _currentPdfPath = tempFile.path;
-      } else {
-        // Salvar versão comprimida para uso futuro
-        final file = File(path);
-        final originalData = await file.readAsBytes();
-        final compressedData = gzip.encode(originalData);
-        if (savedPath != null) {
-          await File(savedPath).writeAsBytes(compressedData);
-        }
-        _currentPdfPath = path;
-      }
-
-      // Recuperar última página lida
       final prefs = await SharedPreferences.getInstance();
-      final lastPage = prefs.getInt('last_page_${path.hashCode}') ?? 1;
+      final lastPage = prefs.getInt('last_page_${url.hashCode}') ?? 1;
 
       _controller = PdfController(
-        document: PdfDocument.openFile(_currentPdfPath!),
+        document: PdfDocument.openData(await _fetchPdfData(url)),
         initialPage: lastPage,
       );
-
-      // Ouvinte para salvar a página conforme o usuário desliza
-      // Nota: PdfController não tem addListener, então salvaremos manualmente no widget
     } catch (e) {
       debugPrint('Erro ao carregar PDF: $e');
       rethrow;
     }
   }
 
-  Future<File> _createTempFile(List<int> data, String fileName) async {
-    final appDir = await getApplicationDocumentsDirectory();
-    final tempDir = Directory('${appDir.path}/temp');
-    
-    if (!await tempDir.exists()) {
-      await tempDir.create(recursive: true);
+  Future<Uint8List> _fetchPdfData(String url) async {
+    final response = await _dio.get(
+      url,
+      options: Options(responseType: ResponseType.bytes),
+    );
+
+    if (response.statusCode == 200) {
+      return Uint8List.fromList(response.data);
+    } else {
+      throw Exception('Failed to load PDF from URL: ${response.statusCode}');
     }
-    
-    final tempFile = File('${tempDir.path}/$fileName');
-    return await tempFile.writeAsBytes(data);
   }
 
   @override
-  Future<void> saveCurrentPage(String originalPath, int page) async {
+  Future<void> saveCurrentPage(String url, int page) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('last_page_${originalPath.hashCode}', page);
+    await prefs.setInt('last_page_${url.hashCode}', page);
   }
 
   @override
   void dispose() {
     _controller?.dispose();
     _controller = null;
-    _currentPdfPath = null;
   }
 }

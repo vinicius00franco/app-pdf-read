@@ -25,8 +25,8 @@ class _PdfViewerWidgetState extends State<PdfViewerWidget> {
   @override
   void initState() {
     super.initState();
-    debugPrint('PdfViewerWidget: initState chamado');
-    debugPrint('PdfViewerWidget: controller.pagesCount = ${widget.controller.pagesCount}');
+    //debugPrint('PdfViewerWidget: initState chamado');
+    //debugPrint('PdfViewerWidget: controller.pagesCount = ${widget.controller.pagesCount}');
 
     // Tentar obter o total de páginas de forma assíncrona
     _initializeTotalPages();
@@ -38,36 +38,36 @@ class _PdfViewerWidgetState extends State<PdfViewerWidget> {
       await Future.delayed(const Duration(milliseconds: 100));
 
       final pages = widget.controller.pagesCount;
-      debugPrint('PdfViewerWidget: Após delay, pagesCount = $pages');
+      //debugPrint('PdfViewerWidget: Após delay, pagesCount = $pages');
 
       if (pages != null && pages > 0) {
         setState(() {
           totalPages = pages;
         });
-        debugPrint('PdfViewerWidget: totalPages atualizado para $totalPages');
+        //debugPrint('PdfViewerWidget: totalPages atualizado para $totalPages');
       } else {
-        debugPrint('PdfViewerWidget: pagesCount ainda é null ou 0, tentando novamente...');
+        //debugPrint('PdfViewerWidget: pagesCount ainda é null ou 0, tentando novamente...');
         // Tentar novamente após mais tempo
         await Future.delayed(const Duration(milliseconds: 500));
         final retryPages = widget.controller.pagesCount;
-        debugPrint('PdfViewerWidget: Após retry, pagesCount = $retryPages');
+        //debugPrint('PdfViewerWidget: Após retry, pagesCount = $retryPages');
 
         if (retryPages != null && retryPages > 0) {
           setState(() {
             totalPages = retryPages;
           });
-          debugPrint('PdfViewerWidget: totalPages atualizado após retry para $totalPages');
+          //debugPrint('PdfViewerWidget: totalPages atualizado após retry para $totalPages');
         } else {
-          debugPrint('PdfViewerWidget: Falhou em obter pagesCount mesmo após retry');
+          //debugPrint('PdfViewerWidget: Falhou em obter pagesCount mesmo após retry');
         }
       }
     } catch (e) {
-      debugPrint('PdfViewerWidget: Erro ao inicializar totalPages: $e');
+      //debugPrint('PdfViewerWidget: Erro ao inicializar totalPages: $e');
     }
   }
 
   void _onPageChanged(int? page) {
-    debugPrint('PdfViewerWidget: _onPageChanged chamado com page = $page');
+    //debugPrint('PdfViewerWidget: _onPageChanged chamado com page = $page');
     setState(() {
       currentPage = page ?? 1;
     });
@@ -77,7 +77,7 @@ class _PdfViewerWidgetState extends State<PdfViewerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('PdfViewerWidget: build chamado - currentPage: $currentPage, totalPages: $totalPages');
+    //debugPrint('PdfViewerWidget: build chamado - currentPage: $currentPage, totalPages: $totalPages');
     return Column(
       children: [
         Expanded(
