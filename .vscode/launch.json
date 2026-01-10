@@ -8,26 +8,38 @@
             "name": "flutter_app (Android físico - Debug)",
             "request": "launch",
             "type": "dart",
-            "deviceId": "ae6tdi8xdaaieqq4"
+            "deviceId": "a563b29b",
+            "env": {
+                "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64"
+            }
         },
         {
             "name": "flutter_app (Android físico - Profile)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile",
-            "deviceId": "ae6tdi8xdaaieqq4"
+            "deviceId": "a563b29b",
+            "env": {
+                "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64"
+            }
         },
         {
             "name": "flutter_app (Android físico - Release)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release",
-            "deviceId": "ae6tdi8xdaaieqq4"
+            "deviceId": "a563b29b",
+            "env": {
+                "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64"
+            }
         },
         {
             "name": "flutter_app (Selecionar dispositivo)",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "env": {
+                "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64"
+            }
         }
     ]
 }

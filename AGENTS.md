@@ -42,3 +42,8 @@
 ## Multiplataforma
 - Android, iOS, Windows, macOS, Linux, Web
 - Configurações específicas por plataforma
+
+## Controle de Mudanças
+- Toda mudança feita deve ser registrada em CHANGES.md
+- Toda regra de negócio existente, alterada ou excluída deve ser adicionada em REGRAS_DE_NEGOCIO.md
+- Toda mudança no código deve analisar o contexto do código e suas regras

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_spacing.dart';
 
 class ImportButtonWidget extends StatelessWidget {
   final VoidCallback onPressed;
@@ -7,9 +8,16 @@ class ImportButtonWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
+    return ElevatedButton.icon(
       onPressed: onPressed,
-      child: const Text("Importar PDF"),
+      icon: const Icon(Icons.upload_file, size: 24),
+      label: const Text("Importar PDF"),
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.md,
+        ),
+      ),
     );
   }
 }

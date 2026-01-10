@@ -3,6 +3,9 @@ import '../models/saved_pdf.dart';
 import '../services/saved_pdf_service.dart';
 import '../services/i_pdf_service.dart';
 import '../widgets/pdf_viewer_widget.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_text_styles.dart';
 
 class PdfListScreen extends StatefulWidget {
   final IPdfService pdfService;
@@ -46,8 +49,14 @@ class _PdfListScreenState extends State<PdfListScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmar exclusão'),
-        content: Text('Deseja excluir "${pdf.originalName}"?'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.dialogRadius),
+        ),
+        title: Text('Confirmar exclusão', style: AppTextStyles.h3),
+        content: Text(
+          'Deseja excluir "${pdf.originalName}"?',
+          style: AppTextStyles.bodyMedium,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -55,6 +64,7 @@ class _PdfListScreenState extends State<PdfListScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Excluir'),
           ),
         ],
@@ -116,42 +126,94 @@ class _PdfListScreenState extends State<PdfListScreen> {
         title: const Text('PDFs Salvos'),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : _savedPdfs.isEmpty
-              ? const Center(
-                  child: Text(
-                    'Nenhum PDF salvo',
-                    style: TextStyle(fontSize: 16),
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.folder_open,
+                        size: 80,
+                        color: AppColors.textTertiary,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        'Nenhum PDF salvo',
+                        style: AppTextStyles.h3.copyWith(color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Importe um PDF para começar',
+                        style: AppTextStyles.bodyMedium,
+                      ),
+                    ],
                   ),
                 )
               : ListView.builder(
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   itemCount: _savedPdfs.length,
                   itemBuilder: (context, index) {
                     final pdf = _savedPdfs[index];
                     return Card(
-                      margin: const EdgeInsets.all(8),
-                      child: ListTile(
-                        leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
-                        title: Text(pdf.originalName),
-                        subtitle: Text(
-                          'Salvo em: ${pdf.savedAt.day}/${pdf.savedAt.month}/${pdf.savedAt.year}',
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.visibility),
-                              onPressed: () => _openPdf(pdf),
-                              tooltip: 'Abrir PDF',
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deletePdf(pdf),
-                              tooltip: 'Excluir PDF',
-                            ),
-                          ],
-                        ),
+                      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: InkWell(
                         onTap: () => _openPdf(pdf),
+                        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(AppSpacing.sm),
+                                decoration: BoxDecoration(
+                                  color: AppColors.pdfIcon.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(AppSpacing.sm),
+                                ),
+                                child: const Icon(
+                                  Icons.picture_as_pdf,
+                                  color: AppColors.pdfIcon,
+                                  size: 32,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      pdf.originalName,
+                                      style: AppTextStyles.bodyLarge.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Text(
+                                      'Salvo em: ${pdf.savedAt.day.toString().padLeft(2, '0')}/${pdf.savedAt.month.toString().padLeft(2, '0')}/${pdf.savedAt.year}',
+                                      style: AppTextStyles.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.visibility_outlined),
+                                onPressed: () => _openPdf(pdf),
+                                tooltip: 'Abrir PDF',
+                                color: AppColors.primary,
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: () => _deletePdf(pdf),
+                                tooltip: 'Excluir PDF',
+                                color: AppColors.error,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     );
                   },

@@ -2,7 +2,7 @@
 /// Centraliza todas as rotas e URLs para facilitar manutenção
 
 // Base URL da API - ALTERE ESTA CONSTANTE PARA O SEU AMBIENTE
-const String baseUrl = 'http://192.168.15.2:8000'; // IP local da máquina host
+const String baseUrl = 'http://192.168.15.10:8085'; // IP local da máquina host
 
 class ApiEndpoints {
   // Sistema
@@ -25,7 +25,8 @@ class ApiEndpoints {
   static String get healthCheckUrl => '$baseUrl$healthCheck';
   static String get uploadPdfUrl => '$baseUrl$uploadPdf';
   static String get listPdfsUrl => '$baseUrl$listPdfs';
-  static String downloadPdfUrl(String filename) => '$baseUrl$downloadPdf$filename';
+  static String downloadPdfUrl(String filename) =>
+      '$baseUrl$downloadPdf$filename';
   static String deletePdfUrl(String filename) => '$baseUrl$deletePdf$filename';
   static String staticPdfUrl(String filename) => '$baseUrl$staticPdf$filename';
 }

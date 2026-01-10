@@ -6,6 +6,9 @@ import '../services/pdf_api_service.dart';
 import '../widgets/import_button_widget.dart';
 import '../widgets/pdf_viewer_widget.dart';
 import '../models/saved_pdf.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_text_styles.dart';
 import 'pdf_list_screen.dart';
 import 'dart:io';
 
@@ -127,18 +130,66 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
         ],
       ),
       body: widget.pdfService.controller == null || _currentPdfUrl == null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ImportButtonWidget(onPressed: _pickAndLoadPdf),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: _goToSavedPdfs,
-                    icon: const Icon(Icons.list),
-                    label: const Text('Ver PDFs Salvos'),
+          ? Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [AppColors.background, AppColors.surfaceVariant],
+                ),
+              ),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.xl),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.picture_as_pdf,
+                          size: 80,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      Text(
+                        'Bem-vindo ao PDF Reader',
+                        style: AppTextStyles.h1,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Importe um PDF para começar',
+                        style: AppTextStyles.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      ImportButtonWidget(onPressed: _pickAndLoadPdf),
+                      const SizedBox(height: AppSpacing.md),
+                      OutlinedButton.icon(
+                        onPressed: _goToSavedPdfs,
+                        icon: const Icon(Icons.folder_open),
+                        label: const Text('Ver PDFs Salvos'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.md,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             )
           : PdfViewerWidget(
