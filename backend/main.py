@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes.pdf_routes import pdf_router
 from app.routes.system_routes import system_router
+from app.routes.llm_routes import router as llm_router
 
 # Cria a aplicação FastAPI
 app = FastAPI(
@@ -27,3 +28,4 @@ app.mount("/pdfs", StaticFiles(directory="assets"), name="pdfs")
 # Inclui as rotas da API organizadas por feature
 app.include_router(system_router, prefix="/api/system", tags=["system"])
 app.include_router(pdf_router, prefix="/api/pdfs", tags=["pdfs"])
+app.include_router(llm_router, prefix="/api/llm", tags=["llm"])

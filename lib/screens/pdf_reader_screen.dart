@@ -11,7 +11,10 @@ import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 import 'pdf_list_screen.dart';
 import 'dart:io';
+import '../widgets/llm_sidebar_widget.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+/// Tela principal do leitor de PDF que gerencia a seleção, upload e visualização do arquivo.
 class PdfReaderScreen extends StatefulWidget {
   final IPdfPickerService pdfPickerService;
   final IPdfService pdfService;
@@ -30,6 +33,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   String? _currentPdfUrl;
   final SavedPdfService _savedPdfService = SavedPdfService();
   final PdfApiService _apiService = PdfApiService();
+  bool _isSidebarOpen = false;
 
   @override
   void dispose() {
@@ -37,6 +41,11 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     super.dispose();
   }
 
+  /// Processo completo de seleção e carregamento:
+  /// 1. Seleciona o arquivo localmente.
+  /// 2. Faz o upload para o servidor backend.
+  /// 3. Deleta o arquivo temporário local.
+  /// 4. Carrega a visualização a partir da URL do servidor.
   Future<void> _pickAndLoadPdf() async {
     debugPrint('PdfReaderScreen: Iniciando seleção de PDF');
     try {
@@ -52,7 +61,9 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
         // Delete local cached file after upload
         try {
           await File(path).delete();
-          debugPrint('PdfReaderScreen: Arquivo local deletado após upload: $path');
+          debugPrint(
+            'PdfReaderScreen: Arquivo local deletado após upload: $path',
+          );
         } catch (e) {
           debugPrint('PdfReaderScreen: Erro ao deletar arquivo local: $e');
         }
@@ -66,7 +77,11 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
         setState(() {});
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('PDF enviado para o backend e carregado com sucesso!')),
+            const SnackBar(
+              content: Text(
+                'PDF enviado para o backend e carregado com sucesso!',
+              ),
+            ),
           );
         }
       } else {
@@ -80,14 +95,18 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     } catch (e) {
       debugPrint('PdfReaderScreen: Erro ao processar PDF: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao enviar PDF: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao enviar PDF: $e')));
       }
     }
   }
 
-  Future<void> _savePdfInfo(Map<String, dynamic> uploadResult, String pdfUrl) async {
+  /// Persiste as informações do PDF carregado no banco de dados local (SQLite).
+  Future<void> _savePdfInfo(
+    Map<String, dynamic> uploadResult,
+    String pdfUrl,
+  ) async {
     try {
       final savedPdf = SavedPdf(
         id: uploadResult['id'],
@@ -102,6 +121,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     }
   }
 
+  /// Navega para a tela que lista todos os PDFs já importados e salvos.
   void _goToSavedPdfs() {
     Navigator.push(
       context,
@@ -129,6 +149,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
           ),
         ],
       ),
+      // Exibe o estado vazio se nenhum PDF estiver carregado, caso contrário exibe o visualizador.
       body: widget.pdfService.controller == null || _currentPdfUrl == null
           ? Container(
               decoration: BoxDecoration(
@@ -147,7 +168,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.xl),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -183,7 +204,9 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                             vertical: AppSpacing.md,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.buttonRadius,
+                            ),
                           ),
                         ),
                       ),
@@ -192,10 +215,84 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                 ),
               ),
             )
-          : PdfViewerWidget(
-              controller: widget.pdfService.controller!,
-              pdfService: widget.pdfService,
-              originalPath: _currentPdfUrl!,
+          : Stack(
+              children: [
+                // Visualizador de PDF: Ocupa a área principal da tela, deixando um espaço
+                // para o acionador da barra lateral à direita.
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  right: 50, // Respiro lateral para o botão "CHAT"
+                  child: PdfViewerWidget(
+                    controller: widget.pdfService.controller!,
+                    pdfService: widget.pdfService,
+                    originalPath: _currentPdfUrl!,
+                  ),
+                ),
+                // // Acionador Lateral (Aba "CHAT"): Fica fixo na lateral direita.
+                // // Ao ser clicado, alterna o estado '_isSidebarOpen', disparando a animação.
+                // Positioned(
+                //   right: 0,
+                //   top: 0,
+                //   bottom: 0,
+                //   width: 50,
+                //   child: GestureDetector(
+                //     onTap: () =>
+                //         setState(() => _isSidebarOpen = !_isSidebarOpen),
+                //     child: Container(
+                //       color: AppColors.primary,
+                //       child: Column(
+                //         mainAxisAlignment: MainAxisAlignment.center,
+                //         children: [
+                //           RotatedBox(
+                //             quarterTurns: _isSidebarOpen ? 0 : 3,
+                //             child: Icon(
+                //               _isSidebarOpen ? Icons.close : Icons.chat,
+                //               color: Colors.white,
+                //               size: 28,
+                //             ),
+                //           ),
+                //           if (!_isSidebarOpen) ...[
+                //             const SizedBox(height: 8),
+                //             RotatedBox(
+                //               quarterTurns: 3,
+                //               child: Text(
+                //                 'CHAT', // Rótulo vertical para identificação rápida
+                //                 style: AppTextStyles.bodySmall.copyWith(
+                //                   color: Colors.white,
+                //                   fontWeight: FontWeight.bold,
+                //                   letterSpacing: 2,
+                //                 ),
+                //               ),
+                //             ),
+                //           ],
+                //         ],
+                //       ),
+                //     ),
+                //   ),
+                // ),
+                // Barra Lateral Animada (Sidebar): Utiliza 'AnimatedPositioned' para deslizar
+                // da direita para a esquerda quando aberta. Ocupa 80% da largura da tela.
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  right: _isSidebarOpen
+                      ? 50 // Quando aberta, estaciona rente ao botão "CHAT"
+                      : -MediaQuery.of(context).size.width *
+                            0.8, // Quando fechada, fica fora da tela
+                  top: 0,
+                  bottom: 0,
+                  width: MediaQuery.of(context).size.width * 0.8,
+                  child: Material(
+                    elevation: 16, // Sombra para dar profundidade sobre o PDF
+                    child: LLMSidebarWidget(
+                      pdfUrl: _currentPdfUrl!,
+                      apiKey: dotenv.env['GEMINI_API_KEY'] ?? '',
+                    ),
+                  ),
+                ),
+              ],
             ),
     );
   }

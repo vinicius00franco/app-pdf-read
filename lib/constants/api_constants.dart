@@ -1,5 +1,5 @@
-/// Configurações da API para o aplicativo Flutter
-/// Centraliza todas as rotas e URLs para facilitar manutenção
+// Configurações da API para o aplicativo Flutter
+// Centraliza todas as rotas e URLs para facilitar manutenção
 
 // Base URL da API - ALTERE ESTA CONSTANTE PARA O SEU AMBIENTE
 const String baseUrl = 'http://192.168.15.10:8085'; // IP local da máquina host
@@ -17,6 +17,7 @@ class ApiEndpoints {
 
   // Arquivos estáticos
   static const String staticPdf = '/pdfs/';
+  static const String llmPersist = '/api/llm/persist';
 
   // URLs completas
   static String get fullBaseUrl => baseUrl;

@@ -6,6 +6,8 @@ import '../widgets/pdf_viewer_widget.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
+import '../widgets/llm_sidebar_widget.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class PdfListScreen extends StatefulWidget {
   final IPdfService pdfService;
@@ -38,9 +40,9 @@ class _PdfListScreenState extends State<PdfListScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao carregar PDFs: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao carregar PDFs: $e')));
       }
     }
   }
@@ -82,9 +84,9 @@ class _PdfListScreenState extends State<PdfListScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erro ao excluir PDF: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Erro ao excluir PDF: $e')));
         }
       }
     }
@@ -97,24 +99,19 @@ class _PdfListScreenState extends State<PdfListScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => Scaffold(
-              appBar: AppBar(
-                title: Text(pdf.originalName),
-              ),
-              body: PdfViewerWidget(
-                controller: widget.pdfService.controller!,
-                pdfService: widget.pdfService,
-                originalPath: pdf.pdfUrl,
-              ),
+            builder: (context) => _PdfViewerPage(
+              pdfService: widget.pdfService,
+              pdfUrl: pdf.pdfUrl,
+              fileName: pdf.originalName,
             ),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao abrir PDF: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao abrir PDF: $e')));
       }
     }
   }
@@ -122,102 +119,212 @@ class _PdfListScreenState extends State<PdfListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('PDFs Salvos'),
-      ),
+      appBar: AppBar(title: const Text('PDFs Salvos')),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             )
           : _savedPdfs.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.folder_open,
-                        size: 80,
-                        color: AppColors.textTertiary,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Text(
-                        'Nenhum PDF salvo',
-                        style: AppTextStyles.h3.copyWith(color: AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        'Importe um PDF para começar',
-                        style: AppTextStyles.bodyMedium,
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.folder_open,
+                    size: 80,
+                    color: AppColors.textTertiary,
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  itemCount: _savedPdfs.length,
-                  itemBuilder: (context, index) {
-                    final pdf = _savedPdfs[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                      child: InkWell(
-                        onTap: () => _openPdf(pdf),
-                        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(AppSpacing.sm),
-                                decoration: BoxDecoration(
-                                  color: AppColors.pdfIcon.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'Nenhum PDF salvo',
+                    style: AppTextStyles.h3.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Importe um PDF para começar',
+                    style: AppTextStyles.bodyMedium,
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              itemCount: _savedPdfs.length,
+              itemBuilder: (context, index) {
+                final pdf = _savedPdfs[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: InkWell(
+                    onTap: () => _openPdf(pdf),
+                    borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.sm),
+                            decoration: BoxDecoration(
+                              color: AppColors.pdfIcon.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(
+                                AppSpacing.sm,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.picture_as_pdf,
+                              color: AppColors.pdfIcon,
+                              size: 32,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  pdf.originalName,
+                                  style: AppTextStyles.bodyLarge.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                child: const Icon(
-                                  Icons.picture_as_pdf,
-                                  color: AppColors.pdfIcon,
-                                  size: 32,
+                                const SizedBox(height: AppSpacing.xs),
+                                Text(
+                                  'Salvo em: ${pdf.savedAt.day.toString().padLeft(2, '0')}/${pdf.savedAt.month.toString().padLeft(2, '0')}/${pdf.savedAt.year}',
+                                  style: AppTextStyles.bodySmall,
                                 ),
-                              ),
-                              const SizedBox(width: AppSpacing.md),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      pdf.originalName,
-                                      style: AppTextStyles.bodyLarge.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: AppSpacing.xs),
-                                    Text(
-                                      'Salvo em: ${pdf.savedAt.day.toString().padLeft(2, '0')}/${pdf.savedAt.month.toString().padLeft(2, '0')}/${pdf.savedAt.year}',
-                                      style: AppTextStyles.bodySmall,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.visibility_outlined),
-                                onPressed: () => _openPdf(pdf),
-                                tooltip: 'Abrir PDF',
-                                color: AppColors.primary,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline),
-                                onPressed: () => _deletePdf(pdf),
-                                tooltip: 'Excluir PDF',
-                                color: AppColors.error,
-                              ),
-                            ],
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.visibility_outlined),
+                            onPressed: () => _openPdf(pdf),
+                            tooltip: 'Abrir PDF',
+                            color: AppColors.primary,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            onPressed: () => _deletePdf(pdf),
+                            tooltip: 'Excluir PDF',
+                            color: AppColors.error,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}
+
+class _PdfViewerPage extends StatefulWidget {
+  final IPdfService pdfService;
+  final String pdfUrl;
+  final String fileName;
+
+  const _PdfViewerPage({
+    required this.pdfService,
+    required this.pdfUrl,
+    required this.fileName,
+  });
+
+  @override
+  State<_PdfViewerPage> createState() => _PdfViewerPageState();
+}
+
+class _PdfViewerPageState extends State<_PdfViewerPage> {
+  bool _isSidebarOpen = false;
+  bool _showingChat = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.fileName)),
+      body: Stack(
+        children: [
+          // PDF Viewer (ocupa tela toda menos o indicador)
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            right: 50,
+            child: PdfViewerWidget(
+              controller: widget.pdfService.controller!,
+              pdfService: widget.pdfService,
+              originalPath: widget.pdfUrl,
+            ),
+          ),
+          // Indicador lateral fixo
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 50,
+            child: GestureDetector(
+              onTap: () => setState(() => _isSidebarOpen = !_isSidebarOpen),
+              child: Container(
+                color: AppColors.primary,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    RotatedBox(
+                      quarterTurns: _isSidebarOpen ? 0 : 3,
+                      child: Icon(
+                        _isSidebarOpen ? Icons.close : Icons.chat,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    if (!_isSidebarOpen) ...[
+                      const SizedBox(height: 8),
+                      RotatedBox(
+                        quarterTurns: 3,
+                        child: Text(
+                          'CHAT',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2,
                           ),
                         ),
                       ),
-                    );
-                  },
+                    ],
+                  ],
                 ),
+              ),
+            ),
+          ),
+          // Sidebar expansível
+          // AnimatedPositioned(
+          //   duration: const Duration(milliseconds: 300),
+          //   curve: Curves.easeInOut,
+          //   right: _isSidebarOpen
+          //       ? 50
+          //       : -MediaQuery.of(context).size.width * 0.8,
+          //   top: 0,
+          //   bottom: 0,
+          //   width: MediaQuery.of(context).size.width * 0.8,
+          //   child: Material(
+          //     elevation: 16,
+          //     child: Column(
+          //       children: [
+          //         // Conteúdo
+          //         Expanded(
+          //           child: LLMSidebarWidget(
+          //             pdfUrl: widget.pdfUrl,
+          //             apiKey: dotenv.env['GEMINI_API_KEY'] ?? '',
+          //           ),
+          //         ),
+          //       ],
+          //     ),
+          //   ),
+          // ),
+        ],
+      ),
     );
   }
 }
